@@ -1,0 +1,67 @@
+﻿@page "/listaPrimos"
+@rendermode InteractiveServer
+
+<PageTitle>Numeros Primos</PageTitle>
+
+<h1>Lista de Numeros Primos</h1>
+
+<div>
+    <label for="number">Numero Entero:</label>
+    <input type="number" id="number" @bind="n" class="form-control"/>
+
+    @if (error != null)
+    {
+        <div class="text-danger">@error </div>
+    }
+
+    <button class="btn btn-primary mt-3" @onclick="Calcular">Generar Primos</button>
+</div>
+
+@if (result)
+{
+    <div class="mt-4">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th class="text-center bg-light">Numeros Primos</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < primos.Count; i++)
+                {
+                    <tr>
+                        <td class="text-center">@(i < primos.Count ? primos[i] : "")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+@code {
+    private int n { get; set; }
+    private bool result = false;
+    private List<int> primos = new();
+    private string? error;
+
+    private void Calcular() {
+
+        if (n <= 0) {
+            error = "El numero ingresado debe ser entero positivo";
+            result = false;
+            return;
+        }
+
+        error = null;
+        primos.Clear();
+
+        for(int i = 2; i <= n; i++) {
+
+            bool isPrime = true;
+
+            for (int j = 2; j < i; j++) { if (i % j == 0) { isPrime = false; break; } }
+            if(isPrime) { primos.Add(i); }
+
+        result = true;
+        }
+    }
+}

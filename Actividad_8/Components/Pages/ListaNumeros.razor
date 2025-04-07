@@ -1,0 +1,62 @@
+﻿@page "/listaNumeros"
+@rendermode InteractiveServer
+
+<PageTitle>Lista de Numeros</PageTitle>
+
+<h1>Lista de Numeros</h1>
+
+<div>
+    <label for="numberOne">Numero 1:</label>
+    <input type="number" id="numberOne" @bind="n1" class="form-control"/>
+
+    <label for="numberTwo">Numero 2:</label>
+    <input type="number" id="numberTwo" @bind="n2" class="form-control"/>
+
+    <button class="btn btn-primary mt-3" @onclick="Calcular">Calcular</button>
+</div>
+
+@if (result)
+{
+    <div class="mt-4">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th class="text-center bg-light">Pares</th>
+                    <th class="text-center bg-light">Impares</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Math.Max(pares.Count, impares.Count); i++)
+                {
+                    <tr>
+                        <td class="text-center">@(i < pares.Count ? pares[i] : "")</td>
+                        <td class="text-center">@(i < impares.Count ? impares[i] : "")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+@code {
+    private int n1 { get; set; }
+    private int n2 { get; set; }
+    private bool result = false;
+    private List<int> pares = new();
+    private List<int> impares = new();
+
+    private void Calcular() {
+        pares.Clear();
+        impares.Clear();
+
+        int start = Math.Min(n1, n2);
+        int end = Math.Max(n1, n2);
+
+        for(int i = start; i <= end; i++) {
+            if (i % 2 == 0)
+                pares.Add(i);
+            else
+                impares.Add(i);
+        }
+        result = true;
+    }
+}

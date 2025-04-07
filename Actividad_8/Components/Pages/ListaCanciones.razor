@@ -1,0 +1,123 @@
+﻿@page "/listaCanciones"
+@rendermode InteractiveServer
+@using System.Linq
+
+<PageTitle>Lista de Canciones</PageTitle>
+
+<h1>Lista de Canciones</h1>
+
+<div class="input-group mt-4">
+
+    <input type="text" class="form-control" placeholder="Añadir canción nueva" @bind="newSong" />
+
+    <button class="btn btn-primary" @onclick="addSong">@(edition ? "Actualizar" : "Agregar")</button>
+
+    @if (edition)
+    {
+        <button class="btn btn-primary" @onclick="cancelEdition">Cancelar</button>
+    }
+</div>
+
+<div class="row mt-3">
+
+    <div class="col-md-6">
+        <div class="input-group">
+            <span class="input-group-text">Orden:</span>
+            <select class="form-select" @bind="orderSelected">
+                <option value="asc">A-Z (Ascendente)</option>
+                <option value="desc">Z-A (Descendente)</option>
+                <option value="original">Agregado recientemente</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="input-group">
+            <span class="input-group-text">Filtrar:</span>
+            <input type="text" class="form-control" placeholder="Ej: 'summer'" @bind="filterText" />
+        </div>
+    </div>
+
+</div>
+
+<div class="list-group">
+    @foreach (var song in FilteredAndSortedSongs)
+    {
+        <div class="list-group-item d-flex justify-content-between align-items-center">
+            <span>@song</span>
+            <div>
+                <button class="btn btn-sm btn-primary me-2" @onclick="() => preparateEdition(song)">Editar</button>
+                <button class="btn btn-sm btn-danger me-2" @onclick="() => removeSong(song)">Eliminar</button>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="mt-3 alert alert-info">
+    Mostrando @(FilteredAndSortedSongs.Count()) de @songs.Count canción(es)
+</div>
+
+@code {
+    private List<string> songs = new();
+    private string newSong = "";
+    private string originalSong = "";
+    private bool edition = false;
+    private string orderSelected = "original";
+    private string filterText = "";
+
+    private IEnumerable<string> FilteredAndSortedSongs
+    {
+        get
+        {
+            var query = songs.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(filterText)) { query = query.Where(c => c.Contains(filterText, StringComparison.OrdinalIgnoreCase)); }
+
+            switch (orderSelected)
+            {
+                case "asc":
+                    return query.OrderBy(c => c);
+                case "desc":
+                    return query.OrderByDescending(c => c);
+                default:
+                    return query;
+            }
+        }
+    }
+
+    private void addSong()
+    {
+        if (!string.IsNullOrWhiteSpace(newSong))
+        {
+            if (edition)
+            {
+                var index = songs.IndexOf(originalSong);
+                if (index >= 0) songs[index] = newSong;
+                edition = false;
+            }
+            else { songs.Add(newSong); }
+
+            newSong = "";
+            originalSong = "";
+        }
+    }
+
+    private void preparateEdition(string song)
+    {
+        newSong = song;
+        originalSong = song;
+        edition = true;
+    }
+
+    private void cancelEdition()
+    {
+        newSong = "";
+        originalSong = "";
+        edition = false;
+    }
+
+    private void removeSong(string song)
+    {
+        songs.Remove(song);
+    }
+}
