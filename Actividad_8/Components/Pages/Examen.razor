@@ -1,6 +1,206 @@
 ﻿@page "/examen"
 @rendermode InteractiveServer
+@using System.ComponentModel.DataAnnotations
 
-<PageTitle>Examen</PageTitle>
+<PageTitle>Productos</PageTitle>
 
-<h1>Examen</h1>
+<div class="container mt-4">
+    <h1>Productos</h1>
+
+    <EditForm Model="@currentProduct" OnValidSubmit="@SaveProduct">
+        <DataAnnotationsValidator />
+
+        <div class="row mb-3">
+            <div class="col-md-12 mb-3">
+                <label class="form-label">Inventario:</label>
+                <InputNumber class="form-control" @bind-Value="currentProduct.InventoryNumber" />
+                <ValidationMessage For="@(() => currentProduct.InventoryNumber)" />
+                @if (duplicateInventory)
+                {
+                    <div class="text-danger">El número de inventario ya existe</div>
+                }
+            </div>
+
+            <div class="col-md-12 mb-3">
+                <label class="form-label">Nombre:</label>
+                <InputText class="form-control" @bind-Value="currentProduct.Name" maxlength="200" />
+                <ValidationMessage For="@(() => currentProduct.Name)" />
+            </div>
+
+            <div class="col-md-12 mb-3">
+                <label class="form-label">Departamento:</label>
+                <div>
+                    <InputRadioGroup @bind-Value="currentProduct.Department">
+                        <InputRadio Value="@("Frutas")" class="form-check-input" id="fruits" />
+                        <label class="form-check-label" for="fruits">Frutas</label>
+
+                        <InputRadio Value="@("Verduras")" class="form-check-input" id="vegetables" />
+                        <label class="form-check-label" for="vegetables">Verduras</label>
+
+                        <InputRadio Value="@("Lácteos")" class="form-check-input" id="dairies" />
+                        <label class="form-check-label" for="dairies">Lácteos</label>
+                    </InputRadioGroup>
+                </div>
+                <ValidationMessage For="@(() => currentProduct.Department)" />
+            </div>
+        </div>
+
+        <div class="mb-4">
+            @if (isEditMode)
+            {
+                <button type="submit" class="btn btn-primary me-2">Actualizar</button>
+                <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancelar</button>
+            }
+            else
+            {
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            }
+            <button type="button" class="btn btn-primary ms-3" @onclick="ToggleView">
+                @(showStock ? "Existencias" : "Listado")
+            </button>
+        </div>
+    </EditForm>
+
+    @if (!showStock)
+    {
+        @if (products.Count > 0)
+        {
+            <h3>Listado de Productos</h3>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Inventario</th>
+                        <th>Nombre</th>
+                        <th>Departamento</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var product in products)
+                    {
+                        <tr>
+                            <td>@product.InventoryNumber</td>
+                            <td>@product.Name</td>
+                            <td>@product.Department</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" @onclick="() => EditProduct(product)">
+                                    Editar
+                                </button>
+                                <button class="btn btn-sm btn-danger" @onclick="() => DeleteProduct(product)">
+                                    Eliminar
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+    else
+    {
+        @if (products.Count > 0)
+        {
+            <h3>Existencias por Departamento</h3>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Frutas</th>
+                        <th>Verduras</th>
+                        <th>Lácteos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>@CountProductsByDepartment("Frutas")</td>
+                        <td>@CountProductsByDepartment("Verduras")</td>
+                        <td>@CountProductsByDepartment("Lácteos")</td>
+                    </tr>
+                </tbody>
+            </table>
+        }
+    }
+</div>
+
+@code {
+    private List<Product> products = new();
+    private Product currentProduct = new();
+    private bool isEditMode = false;
+    private bool showStock = false;  
+    private bool duplicateInventory = false;
+    private int originalProduct = 0;
+
+    private class Product
+    {
+        [Required(ErrorMessage = "El número de inventario es obligatorio")]
+        [Range(1, int.MaxValue, ErrorMessage = "Debe ser un número positivo")]
+        public int InventoryNumber { get; set; }
+
+        [Required(ErrorMessage = "El nombre es obligatorio")]
+        [StringLength(200, ErrorMessage = "Máximo 200 caracteres")]
+        public string Name { get; set; } = "";
+
+        [Required(ErrorMessage = "Selecciona un departamento")]
+        public string Department { get; set; } = "";
+    }
+
+    private void SaveProduct()
+    {
+        duplicateInventory = products.Any(p => p.InventoryNumber == currentProduct.InventoryNumber &&
+                                            (!isEditMode || p.InventoryNumber != originalProduct));
+
+        if (duplicateInventory) return;
+
+        if (isEditMode)
+        {
+            var index = products.FindIndex(p => p.InventoryNumber == originalProduct);
+            if (index >= 0) products[index] = currentProduct;
+        }
+        else
+        {
+            products.Add(currentProduct);
+            showStock = true;
+        }
+
+        ClearForm();
+    }
+
+    private void EditProduct(Product product)
+    {
+        currentProduct = new Product
+            {
+                InventoryNumber = product.InventoryNumber,
+                Name = product.Name,
+                Department = product.Department
+            };
+        originalProduct = product.InventoryNumber;
+        isEditMode = true;
+    }
+
+    private void CancelEdit()
+    {
+        ClearForm();
+    }
+
+    private void DeleteProduct(Product product)
+    {
+        products.Remove(product);
+    }
+
+    private void ToggleView()
+    {
+        showStock = !showStock;
+    }
+
+    private int CountProductsByDepartment(string department)
+    {
+        return products.Count(p => p.Department == department);
+    }
+
+    private void ClearForm()
+    {
+        currentProduct = new Product();
+        originalProduct = 0;
+        isEditMode = false;
+        duplicateInventory = false;
+    }
+}
